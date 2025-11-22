@@ -2,6 +2,7 @@ import os
 import re
 import tempfile
 import numpy as np
+import soundfile as sf
 from typing import Generator
 from huggingface_hub import snapshot_download
 from .model.voxcpm import VoxCPMModel
