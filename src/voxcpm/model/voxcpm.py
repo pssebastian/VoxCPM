@@ -24,6 +24,8 @@ from typing import Tuple, Union, Generator, List
 import torch
 import torch.nn as nn
 import torchaudio
+torchaudio.set_audio_backend("sox_io")
+
 import warnings
 from einops import rearrange
 from pydantic import BaseModel
