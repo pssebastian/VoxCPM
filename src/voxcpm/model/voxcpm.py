@@ -244,13 +244,7 @@ class VoxCPMModel(nn.Module):
                 audio = torch.tensor(audio_np).mean(dim=1, keepdim=True)
 
             if sr != self.sample_rate:
-                # Prevent zero-length audio after resampling
-                if audio.shape[-1] < 2:
-                    raise ValueError(f"Prompt audio too short to resample: {audio.shape[-1]} samples")
-
                 target_len = int(audio.shape[-1] * self.sample_rate / sr)
-                target_len = max(1, target_len) # ensure >0
-                
                 audio = torch.nn.functional.interpolate(audio.unsqueeze(0), size=target_len, mode="linear", align_corners=False).squeeze(0)
 
             patch_len = self.patch_size * self.chunk_size
@@ -357,13 +351,7 @@ class VoxCPMModel(nn.Module):
             audio = torch.tensor(audio_np).mean(dim=1, keepdim=True)
             
         if sr != self.sample_rate:
-            # Avoid zero-length or corrupt prompt WAV
-            if audio.shape[-1] < 2:
-                raise ValueError(f"Prompt audio too short to resample: {audio.shape[-1]} samples found")
-            
             target_len = int(audio.shape[-1] * self.sample_rate / sr)
-            target_len = max(1, target_len)
-            
             audio = torch.nn.functional.interpolate(audio.unsqueeze(0), size=target_len, mode="linear", align_corners=False).squeeze(0)
 
         patch_len = self.patch_size * self.chunk_size
