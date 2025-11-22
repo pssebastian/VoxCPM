@@ -24,8 +24,7 @@ from typing import Tuple, Union, Generator, List
 import torch
 import torch.nn as nn
 import torchaudio
-torchaudio.set_audio_backend("sox_io")
-
+import soundfile as sf
 import warnings
 from einops import rearrange
 from pydantic import BaseModel
@@ -238,12 +237,15 @@ class VoxCPMModel(nn.Module):
             )
             text_length = text_token.shape[0]
 
-            audio, sr = torchaudio.load(prompt_wav_path)
-            if audio.size(0) > 1:
-                audio = audio.mean(dim=0, keepdim=True)
-                
+            audio_np, sr = sf.read(prompt_wav_path, dtype='float32')
+            if audio_np.ndim == 1:
+                audio = torch.tensor(audio_np).unsqueeze(0)
+            else:
+                audio = torch.tensor(audio_np).mean(dim=1, keepdim=True)
+
             if sr != self.sample_rate:
-                audio = torchaudio.functional.resample(audio, sr, self.sample_rate)
+                target_len = int(audio.shape[-1] * self.sample_rate / sr)
+                audio = torch.nn.functional.interpolate(audio.unsqueeze(0), size=target_len, mode="linear", align_corners=False).squeeze(0)
 
             patch_len = self.patch_size * self.chunk_size
 
@@ -342,12 +344,15 @@ class VoxCPMModel(nn.Module):
         text_token = torch.LongTensor(self.text_tokenizer(prompt_text))
 
         # load audio
-        audio, sr = torchaudio.load(prompt_wav_path)
-        if audio.size(0) > 1:
-            audio = audio.mean(dim=0, keepdim=True)
+        audio_np, sr = sf.read(prompt_wav_path, dtype='float32')
+        if audio_np.ndim == 1:
+            audio = torch.tensor(audio_np).unsqueeze(0)
+        else:
+            audio = torch.tensor(audio_np).mean(dim=1, keepdim=True)
             
         if sr != self.sample_rate:
-            audio = torchaudio.functional.resample(audio, sr, self.sample_rate)
+            target_len = int(audio.shape[-1] * self.sample_rate / sr)
+            audio = torch.nn.functional.interpolate(audio.unsqueeze(0), size=target_len, mode="linear", align_corners=False).squeeze(0)
 
         patch_len = self.patch_size * self.chunk_size
 
